@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.wrighting</groupId>
+	<artifactId>upgrade-helper</artifactId>
+	<version>0.1-SNAPSHOT</version>
+	<name>Retrieve maven artifacts</name>
+	<description>Retrieve maven artifacts</description>
+	<packaging>pom</packaging>
+
+	<parent>
+		<groupId>org.alfresco.maven</groupId>
+		<artifactId>alfresco-sdk-parent</artifactId>
+		<version>2.1.1</version>
+	</parent>
+
+	<!-- SDK properties have sensible defaults in the SDK parent, but you can 
+		override the properties below to use another version. For more available 
+		properties see the alfresco-sdk-parent POM. -->
+	<properties>
+		<!-- All we are interested in is alfresco.version and this needs to be set from the command line -->
+		<!-- classifier used to download different jars - used in 4.2 -->
+		<classifier></classifier>
+
+	</properties>
+
+	<!-- Here we realize the connection with the Alfresco selected platform 
+		(e.g.version and edition) -->
+	<dependencyManagement>
+		<dependencies>
+			<!-- This will import the dependencyManagement for all artifacts in the 
+				selected Alfresco plaftorm (see http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies) 
+				NOTE: You still need to define dependencies in your POM, but you can omit 
+				version as it's enforced by this dependencyManagement. NOTE: It defaults 
+				to the latest version this SDK pom has been tested with, but alfresco version 
+				can/should be overridden in your project's pom -->
+			<dependency>
+				<groupId>${alfresco.groupId}</groupId>
+				<artifactId>alfresco-platform-distribution</artifactId>
+				<version>${alfresco.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<scm>
+		<connection>scm:git:git@github.com:wrighting/alfresco-upgrade-helper.git</connection>
+		<url>scm:git:git@github.com:wrighting/alfresco-upgrade-helper.git</url>
+		<developerConnection>scm:git:git@github.com:wrighting/alfresco-upgrade-helper.git</developerConnection>
+	  <tag>HEAD</tag>
+	</scm>
+
+	<dependencies>
+                <dependency>
+                        <groupId>${alfresco.groupId}</groupId>
+			<artifactId>alfresco</artifactId>
+			<version>${alfresco.version}</version>
+                        <type>jar</type>
+                </dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+		       <plugin>
+			 <groupId>org.apache.maven.plugins</groupId>
+			 <artifactId>maven-dependency-plugin</artifactId>
+			 <version>2.10</version>
+			     <configuration>
+			       <artifactItems>
+				 <artifactItem>
+				   <groupId>${alfresco.groupId}</groupId>
+				   <artifactId>alfresco-repository</artifactId>
+				   <version>${alfresco.version}</version>
+				   <classifier>${classifier}</classifier>
+				   <type>jar</type>
+				   <overWrite>false</overWrite>
+				   <outputDirectory>${project.basedir}/${alternateLocation}/${alfresco.version}/repo</outputDirectory>
+				   <destFileName>optional-new-name.jar</destFileName>
+				   <includes>**/*.xml</includes>
+				 </artifactItem>
+			 </artifactItems>
+			       <overWriteReleases>false</overWriteReleases>
+			       <overWriteSnapshots>true</overWriteSnapshots>
+			     </configuration>
+		       </plugin>
+		</plugins>
+	</build>
+
+</project>

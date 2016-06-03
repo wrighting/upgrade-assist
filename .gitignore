@@ -60,3 +60,5 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+alfresco/alfresco-open-mirror/
