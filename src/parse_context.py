@@ -28,7 +28,7 @@ def collectBeansFromFile(filePath):
         tree = ET.parse(filePath)
     except ET.ParseError:
         print "Parse error:" + filePath
-        pass
+        return idList
     #for bean in parseContextFile(tree,nsbeans + 'bean', {'bean': nsbeansuri}):
     for bean in parseContextFile(tree,nsbeans + 'bean', {}):
         bean['path'] = filePath
