@@ -64,9 +64,10 @@ def locateClass(className, root=os.curdir):
     '''Locate all files matching supplied filename pattern in and below
     supplied root directory.'''
     for path, dirs, files in os.walk(os.path.abspath(root)):
-        pattern = className.split(".")[-1] + '.java'
-        for filename in fnmatch.filter(files, pattern):
-            yield os.path.join(path, filename)
+        pattern = className.split(".")[-1].rstrip() + '.java'
+        #for filename in fnmatch.filter(files, pattern):
+        if pattern in files:
+            yield os.path.join(path, pattern)
 
 def preDiffProcess(inString):
     return inString
@@ -138,15 +139,22 @@ if __name__ == "__main__":
                     newSource = ""
                     for c in locateClass(newIdList[beanDef]['element'].get('class'), newPath):
                         newSource = c
-                    if filecmp.cmp(oldSource, newSource):
-                        info("Same java:" + oldSource + " " + newSource)
-                    else:
-                        mySource = ""
-                        for c in locateClass(myIdList[beanDef]['element'].get('class'), customPath):
-                            mySource = c
-                        if mySource == "":
-                            error("Cannot find java for class:" + myIdList[beanDef]['element'].get('class'))
-                        actionRequired("Different java between versions", mySource, oldSource, newSource)
+                    if oldSource == "":
+                            error("Cannot find java for class:" + oldIdList[beanDef]['element'].get('class'))
+                    if newSource == "":
+                            error("Cannot find java for class:" + newIdList[beanDef]['element'].get('class'))
+                    try: 
+                        if filecmp.cmp(oldSource, newSource):
+                            info("Same java:" + oldSource + " " + newSource)
+                        else:
+                            mySource = ""
+                            for c in locateClass(myIdList[beanDef]['element'].get('class'), customPath):
+                                mySource = c
+                            if mySource == "":
+                                error("Cannot find java for class:" + myIdList[beanDef]['element'].get('class'))
+                            actionRequired("Different java between versions", mySource, oldSource, newSource)
+                    except OSError, ose:
+                        print ose
             else:
                 actionRequired("Different bean definition:", myIdList[beanDef]['path'], oldIdList[beanDef]['path'], oldIdList[beanDef]['path']) 
                 compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
