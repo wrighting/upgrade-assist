@@ -7,21 +7,27 @@ DEST=${ALF_DIR}${MIRROR}
 rmdir ${DEST}/*/*
 for i in ${OLD} ${NEW}
 do
-	if [ ! -d ${DEST}/${i}/share ]
+	MAJOR_VERSION=`echo -n $i | awk -F. '{print $1}'`
+	MINOR_VERSION=`echo -n $i | awk -F. '{print $2}'`
+	mkdir -p ${DEST}/${i}/share
+	if [ ${MAJOR_VERSION} -ge 5 -a ${MINOR_VERSION} -ge 1 ]
 	then
-		mkdir -p ${DEST}/${i}/share
 		svn checkout  https://svn.alfresco.com/repos/${MIRROR}/web-apps/Share/tags/${i} ${DEST}/${i}/share
-		#svn checkout  https://svn.alfresco.com/repos/${MIRROR}/web-apps/Share/trunk/${i} ${MIRROR}/${i}/share
-		#mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR}
-		#For versions prior to 5.0
-		#mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR} -Dclassifier=config
+	else
+		mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR} -Dclassifier=config
 	fi
-	if [ ! -d ${DEST}/${i}/repo ]
+	#svn checkout  https://svn.alfresco.com/repos/${MIRROR}/web-apps/Share/trunk/${i} ${MIRROR}/${i}/share
+	#mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR}
+
+	#For versions prior to 5.0
+	mkdir -p ${DEST}/${i}/repo
+	CHECKOUT_VERSION=V${i}
+	if [ ${MAJOR_VERSION} -ge 5 -a ${MINOR_VERSION} -ge 1 ]
 	then
-		mkdir -p ${DEST}/${i}/repo
-		svn checkout https://svn.alfresco.com/repos/${MIRROR}/alfresco/COMMUNITYTAGS/${i} ${DEST}/${i}/repo
-#		svn checkout https://svn.alfresco.com/repos/${MIRROR}/alfresco/HEAD ${DEST}/${i}/repo
+		CHECKOUT_VERSION=${i}
 	fi
+	svn checkout https://svn.alfresco.com/repos/${MIRROR}/alfresco/COMMUNITYTAGS/${CHECKOUT_VERSION} ${DEST}/${i}/repo
+#		svn checkout https://svn.alfresco.com/repos/${MIRROR}/alfresco/HEAD ${DEST}/${i}/repo
 done
 export PYTHONPATH=${PYTHONPATH}:./src
 python src/parse_context.py ../my-alfresco-extensions ${DEST} ${OLD} ${NEW}
