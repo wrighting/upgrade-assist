@@ -22,7 +22,10 @@ The shell script gets the Spring XML files from the old and the new version.
 
 The python script extracts the bean definitions from your custom code and then looks to see if the same beans are defined in the base code.
 
-If your bean overrides a base bean, and the base bean definition has changed then it will report a diff.
+If your bean overrides a base bean:
+
+* if the base bean definition has changed then it will report a diff.
+* if the underlying java class has changed it will report this
 
 This is perhaps easiest to explain with an example.
 
