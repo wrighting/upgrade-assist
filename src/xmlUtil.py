@@ -1,5 +1,24 @@
 import string
 
+def cmp_to_key(mycmp):
+    'Convert a cmp= function into a key= function'
+    class K(object):
+        def __init__(self, obj, *args):
+            self.obj = obj
+        def __lt__(self, other):
+            return mycmp(self.obj, other.obj) < 0
+        def __gt__(self, other):
+            return mycmp(self.obj, other.obj) > 0
+        def __eq__(self, other):
+            return mycmp(self.obj, other.obj) == 0
+        def __le__(self, other):
+            return mycmp(self.obj, other.obj) <= 0  
+        def __ge__(self, other):
+            return mycmp(self.obj, other.obj) >= 0
+        def __ne__(self, other):
+            return mycmp(self.obj, other.obj) != 0
+    return K
+
 def cmp_el(a,b):
     if a.tag < b.tag:
         return -1
@@ -10,21 +29,22 @@ def cmp_el(a,b):
 #    print a.text
 #    print b.tail
 #    print b.text
+    translator = str.maketrans({key: None for key in string.whitespace})
     if a.tail != None and b.tail !=None:
-        if a.tail.translate(None, string.whitespace) < b.tail.translate(None, string.whitespace):
+        if a.tail.translate(translator) < b.tail.translate(translator):
             return -1
-        elif a.tail.translate(None, string.whitespace) > b.tail.translate(None, string.whitespace):
+        elif a.tail.translate(translator) > b.tail.translate(translator):
             return 1
     if a.text != None and b.text !=None:
-        if a.text.translate(None, string.whitespace) < b.text.translate(None, string.whitespace):
+        if a.text.translate(translator) < b.text.translate(translator):
             return -1
-        elif a.text.translate(None, string.whitespace) > b.text.translate(None, string.whitespace):
+        elif a.text.translate(translator) > b.text.translate(translator):
             return 1
 
     #compare attributes
-    aitems = a.attrib.items()
+    aitems = list(a.attrib.items())
     aitems.sort()
-    bitems = b.attrib.items()
+    bitems = list(b.attrib.items())
     bitems.sort()
     if aitems < bitems:
         return -1
@@ -33,9 +53,9 @@ def cmp_el(a,b):
 
     #compare child nodes
     achildren = list(a)
-    achildren.sort(cmp=cmp_el)
+    achildren.sort(key=cmp_to_key(cmp_el))
     bchildren = list(b)
-    bchildren.sort(cmp=cmp_el)
+    bchildren.sort(key=cmp_to_key(cmp_el))
 
     for achild, bchild in zip(achildren, bchildren):
         cmpval = cmp_el(achild, bchild)

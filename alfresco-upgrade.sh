@@ -1,7 +1,7 @@
 MIRROR=alfresco-open-mirror
 ALF_DIR=alfresco/
 OLD=5.0.d
-NEW=5.1.f
+NEW=5.1.g
 DEST=${ALF_DIR}${MIRROR}
 #Quick and easy way to remove failed attempts
 rmdir ${DEST}/*/*
@@ -30,4 +30,4 @@ do
 #		svn checkout https://svn.alfresco.com/repos/${MIRROR}/alfresco/HEAD ${DEST}/${i}/repo
 done
 export PYTHONPATH=${PYTHONPATH}:./src
-python src/parse_context.py ../my-alfresco-extensions ${DEST} ${OLD} ${NEW}
+python3 src/parse_context.py ../my-alfresco-extensions ${DEST} ${OLD} ${NEW}

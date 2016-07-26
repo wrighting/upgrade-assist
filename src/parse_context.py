@@ -77,25 +77,25 @@ def preDiffProcess(inString):
 def compareBeans(bean1, bean2):
     cmpResult = xmlUtil.cmp_el(bean1, bean2)
     if cmpResult != 0:
-        myAsString = ET.tostring(bean1, encoding="utf-8")
-        newAsString = ET.tostring(bean2, encoding="utf-8")
+        myAsString = ET.tostring(bean1, encoding="unicode")
+        newAsString = ET.tostring(bean2, encoding="unicode")
         for line in difflib.context_diff( \
-                             map(preDiffProcess,myAsString.splitlines(1)),\
-                             map(preDiffProcess,newAsString.splitlines(1))):
+                             list(map(preDiffProcess, myAsString.splitlines(True))),\
+                             list(map(preDiffProcess, newAsString.splitlines(True)))):
             sys.stdout.write(line)
-        print
+        print()
     else:
         info("Bean definitions match")
 
     return cmpResult
 
 def actionRequired(message, customFile, oldFile, newFile):
-    print
-    print "You need to check: " + customFile
-    print message
-    print "Old file:" + oldFile
-    print "New file:" + newFile
-    print 
+    print()
+    print("You need to check: " + customFile)
+    print(message)
+    print("Old file:" + oldFile)
+    print("New file:" + newFile)
+    print() 
     
 def info(message):
 #    print message
@@ -106,7 +106,7 @@ def warning(message):
     pass
 
 def error(message):
-    print message
+    print(message)
     pass
 
 if __name__ == "__main__":
@@ -153,20 +153,20 @@ if __name__ == "__main__":
                             if mySource == "":
                                 error("Cannot find java for class:" + myIdList[beanDef]['element'].get('class'))
                             actionRequired("Different java between versions", mySource, oldSource, newSource)
-                    except OSError, ose:
-                        print ose
+                    except OSError as ose:
+                        print(ose)
             else:
-                actionRequired("Different bean definition:", myIdList[beanDef]['path'], oldIdList[beanDef]['path'], oldIdList[beanDef]['path']) 
+                actionRequired("Different bean definition:", myIdList[beanDef]['path'], oldIdList[beanDef]['path'], newIdList[beanDef]['path']) 
                 compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
         elif beanDef in oldIdList:
-            print "BeanDef not in new version:" + beanDef
-            print "Custom file:" + myIdList[beanDef]['path'] 
-            print "Old version file:" + oldIdList[beanDef]['path'] 
+            print("BeanDef not in new version:" + beanDef)
+            print("Custom file:" + myIdList[beanDef]['path']) 
+            print("Old version file:" + oldIdList[beanDef]['path']) 
             compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
         elif beanDef in newIdList:
-            print "BeanDef not in old version:" + beanDef 
-            print "Custom file:" + myIdList[beanDef]['path'] 
-            print "New version file:" + newIdList[beanDef]['path'] 
+            print("BeanDef not in old version:" + beanDef) 
+            print("Custom file:" + myIdList[beanDef]['path']) 
+            print("New version file:" + newIdList[beanDef]['path']) 
             compareBeans(myIdList[beanDef]['element'], newIdList[beanDef]['element'])
         else:
             info("BeanDef only in custom code:" + beanDef + ":" + myIdList[beanDef]['path'])
