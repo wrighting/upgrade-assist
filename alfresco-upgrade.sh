@@ -14,7 +14,9 @@ do
 	then
 		svn checkout  https://svn.alfresco.com/repos/${MIRROR}/web-apps/Share/tags/${i} ${DEST}/${i}/share
 	else
-		mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR} -Dclassifier=config
+		#For 4.2
+		#mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR} -Dclassifier=config
+		mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR} 
 	fi
 	#svn checkout  https://svn.alfresco.com/repos/${MIRROR}/web-apps/Share/trunk/${i} ${MIRROR}/${i}/share
 	#mvn -f ${ALF_DIR}/pom.xml clean dependency:unpack -Dalfresco.version=${i} -DalternateLocation=${MIRROR}
@@ -30,4 +32,4 @@ do
 #		svn checkout https://svn.alfresco.com/repos/${MIRROR}/alfresco/HEAD ${DEST}/${i}/repo
 done
 export PYTHONPATH=${PYTHONPATH}:./src
-python3 src/parse_context.py ../my-alfresco-extensions ${DEST} ${OLD} ${NEW}
+python3 src/compare_alfresco.py ../my-alfresco-extensions ${DEST} ${OLD} ${NEW}

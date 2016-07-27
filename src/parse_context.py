@@ -10,6 +10,67 @@ import copy
 import fnmatch
 import filecmp
 
+from common import actionRequired, info, warning, error
+
+
+def compareBeanDefs(customPath, oldPath, newPath):
+    myIdList, myOtherXML = collectBeanIds(customPath) #    print str(myIdList)
+    oldIdList, oldOtherXML = collectBeanIds(oldPath)
+#    print str(oldIdList)
+    newIdList, newOtherXML = collectBeanIds(newPath)
+    for beanDef in myIdList:
+        if beanDef in oldIdList and beanDef in newIdList:
+            info("BeanDef in all versions:" + beanDef)
+            if compareBeans(oldIdList[beanDef]['element'], 
+                newIdList[beanDef]['element']) == 0:
+                if myIdList[beanDef]['element'].get('class') == newIdList[beanDef]['element'].get('class') and newIdList[beanDef]['element'].get('class') == oldIdList[beanDef]['element'].get('class'):
+                    info("No change so can keep same customization for:" + beanDef)
+                else:
+                    info("Custom class is being used:" + myIdList[beanDef]['element'].get('class'))
+                    info("Checking java for:" + oldIdList[beanDef]['element'].get('class') + " " + newIdList[beanDef]['element'].get('class'))
+                    oldSource = ""
+                    for c in locateClass(oldIdList[beanDef]['element'].get('class'), oldPath):
+                        oldSource = c
+                    
+                    newSource = ""
+                    for c in locateClass(newIdList[beanDef]['element'].get('class'), newPath):
+                        newSource = c
+                    
+                    if oldSource == "":
+                        error("Cannot find java for class:" + oldIdList[beanDef]['element'].get('class'))
+                    if newSource == "":
+                        error("Cannot find java for class:" + newIdList[beanDef]['element'].get('class'))
+                    try:
+                        if filecmp.cmp(oldSource, newSource):
+                            info("Same java:" + oldSource + " " + newSource)
+                        else:
+                            mySource = ""
+                            for c in locateClass(myIdList[beanDef]['element'].get('class'), customPath):
+                                mySource = c
+                            
+                            if mySource == "":
+                                error("Cannot find java for class:" + myIdList[beanDef]['element'].get('class'))
+                            actionRequired("Different java between versions", mySource, oldSource, newSource)
+                    except OSError as ose:
+                        print (ose)
+            else:
+                actionRequired("Different bean definition:", myIdList[beanDef]['path'], oldIdList[beanDef]['path'], newIdList[beanDef]['path'])
+                compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
+        elif beanDef in oldIdList:
+            print("BeanDef not in new version:" + beanDef)
+            print("Custom file:" + myIdList[beanDef]['path'])
+            print("Old version file:" + oldIdList[beanDef]['path'])
+            compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
+        elif beanDef in newIdList:
+            print("BeanDef not in old version:" + beanDef)
+            print("Custom file:" + myIdList[beanDef]['path'])
+            print("New version file:" + newIdList[beanDef]['path'])
+            compareBeans(myIdList[beanDef]['element'], newIdList[beanDef]['element'])
+        else:
+            info("BeanDef only in custom code:" + beanDef + ":" + myIdList[beanDef]['path'])
+    
+    return myOtherXML, oldOtherXML, newOtherXML
+
 nsbeansuri = 'http://www.springframework.org/schema/beans'
 nsbeans = '{' + nsbeansuri +'}'
 
@@ -46,7 +107,8 @@ def collectBeansFromFile(filePath):
 
 def collectBeanIds(startDir):
     idList = {}
-
+    otherXML = {}
+    
     ET.register_namespace('bean',nsbeansuri)
     for dirName, subdirList, fileList in os.walk(startDir):
         if re.match('.*/(target|\.svn|alf_data_dev)/.*', dirName):
@@ -55,10 +117,16 @@ def collectBeanIds(startDir):
             for fileName in fileList:
                 if re.match('.*\.xml$', fileName):
                     filePath = os.path.join(dirName,fileName)
-                    idList.update(collectBeansFromFile(filePath))
+                    beans = collectBeansFromFile(filePath)
+                    if beans:
+                        idList.update(beans)
+                    else:
+                        key = filePath.replace(startDir,'')
+                        otherXML[key] = { 'path': filePath }
+                        #print ("No beans in:" + key + ':' + filePath)
 #                    print "Parsing:" + filePath
 #    print str(idList)
-    return idList
+    return idList, otherXML
 
 def locateClass(className, root=os.curdir):
     '''Locate all files matching supplied filename pattern in and below
@@ -89,25 +157,7 @@ def compareBeans(bean1, bean2):
 
     return cmpResult
 
-def actionRequired(message, customFile, oldFile, newFile):
-    print()
-    print("You need to check: " + customFile)
-    print(message)
-    print("Old file:" + oldFile)
-    print("New file:" + newFile)
-    print() 
-    
-def info(message):
-#    print message
-    pass
-    
-def warning(message):
-#    print message
-    pass
 
-def error(message):
-    print(message)
-    pass
 
 if __name__ == "__main__":
     try:
@@ -115,58 +165,9 @@ if __name__ == "__main__":
     except getopt.GetOptError:
         sys.exit(1)
     customPath = args[0]
-    myIdList = collectBeanIds(customPath)
-#    print str(myIdList)
     oldPath = os.path.join(args[1], args[2])
-    oldIdList = collectBeanIds(oldPath)
-#    print str(oldIdList)
     newPath = os.path.join(args[1], args[3])
-    newIdList = collectBeanIds(newPath)
-    
-    for beanDef in myIdList:
-        if beanDef in oldIdList and beanDef in newIdList:
-            info("BeanDef in all versions:" + beanDef)
-            if compareBeans(oldIdList[beanDef]['element'],\
-                            newIdList[beanDef]['element']) == 0:
-                if myIdList[beanDef]['element'].get('class') == newIdList[beanDef]['element'].get('class') and newIdList[beanDef]['element'].get('class') == oldIdList[beanDef]['element'].get('class'):
-                    info("No change so can keep same customization for:" + beanDef)
-                else:
-                    info("Custom class is being used:" + myIdList[beanDef]['element'].get('class'))
-                    info("Checking java for:" + oldIdList[beanDef]['element'].get('class') + " " + newIdList[beanDef]['element'].get('class'))
-                    oldSource = ""
-                    for c in locateClass(oldIdList[beanDef]['element'].get('class'), oldPath):
-                        oldSource = c
-                    newSource = ""
-                    for c in locateClass(newIdList[beanDef]['element'].get('class'), newPath):
-                        newSource = c
-                    if oldSource == "":
-                            error("Cannot find java for class:" + oldIdList[beanDef]['element'].get('class'))
-                    if newSource == "":
-                            error("Cannot find java for class:" + newIdList[beanDef]['element'].get('class'))
-                    try: 
-                        if filecmp.cmp(oldSource, newSource):
-                            info("Same java:" + oldSource + " " + newSource)
-                        else:
-                            mySource = ""
-                            for c in locateClass(myIdList[beanDef]['element'].get('class'), customPath):
-                                mySource = c
-                            if mySource == "":
-                                error("Cannot find java for class:" + myIdList[beanDef]['element'].get('class'))
-                            actionRequired("Different java between versions", mySource, oldSource, newSource)
-                    except OSError as ose:
-                        print(ose)
-            else:
-                actionRequired("Different bean definition:", myIdList[beanDef]['path'], oldIdList[beanDef]['path'], newIdList[beanDef]['path']) 
-                compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
-        elif beanDef in oldIdList:
-            print("BeanDef not in new version:" + beanDef)
-            print("Custom file:" + myIdList[beanDef]['path']) 
-            print("Old version file:" + oldIdList[beanDef]['path']) 
-            compareBeans(myIdList[beanDef]['element'], oldIdList[beanDef]['element'])
-        elif beanDef in newIdList:
-            print("BeanDef not in old version:" + beanDef) 
-            print("Custom file:" + myIdList[beanDef]['path']) 
-            print("New version file:" + newIdList[beanDef]['path']) 
-            compareBeans(myIdList[beanDef]['element'], newIdList[beanDef]['element'])
-        else:
-            info("BeanDef only in custom code:" + beanDef + ":" + myIdList[beanDef]['path'])
+     
+    compareBeanDefs(customPath, oldPath, newPath)
+            
+   
