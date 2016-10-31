@@ -2,17 +2,20 @@ import filecmp
 import difflib
 import sys
 from common import actionRequired, info, warning, error
+import os
 
 def compareXML(myOtherXML, oldOtherXML, newOtherXML):
     for xmlFile in myOtherXML:
-        if xmlFile in oldOtherXML and xmlFile in newOtherXML:
+        oldPath = oldOtherXML[xmlFile]['path']
+        newPath = newOtherXML[xmlFile]['path']
+        if xmlFile in oldOtherXML and os.path.isfile(oldPath) and xmlFile in newOtherXML and os.path.isfile(newPath):
             info("XML file in all versions:" + xmlFile)
-            if filecmp.cmp(oldOtherXML[xmlFile]['path'], newOtherXML[xmlFile]['path']):
+            if filecmp.cmp(oldPath, newPath):
                 info("No change between versions:" + xmlFile)
             else:
-                actionRequired("Different XML file:", myOtherXML[xmlFile]['path'], oldOtherXML[xmlFile]['path'], newOtherXML[xmlFile]['path'])
-                fromfile = oldOtherXML[xmlFile]['path']
-                tofile = newOtherXML[xmlFile]['path']
+                actionRequired("Different XML file:", myOtherXML[xmlFile]['path'], oldPath, newPath)
+                fromfile = oldPath
+                tofile = newPath
                 with open(fromfile) as fromf, open(tofile) as tof:
                     fromlines, tolines = list(fromf), list(tof)
                 diff = difflib.context_diff(fromlines, tolines)

@@ -7,6 +7,7 @@ import re
 import filecmp
 import difflib
 import sys
+import json
 from common import actionRequired, info, warning, error
 
 class ScriptChecker():
@@ -82,8 +83,28 @@ class ScriptChecker():
                 info("file only in custom code:" + customFile + ":" + customFiles[customFile]['path'])
 
 
+    def findDef(self, defList, defName, mapping):
+        fileDef = None
+        if defName in defList:
+            fileDef = defList[defName]
+
+        if not fileDef:
+            if "files" in mapping and defName in mapping["files"]:
+                info("Found mapping config")
+                mappedFile = mapping["files"][defName]
+                if "reference-file" in mappedBean and mappedFile["reference-file"] in defList:
+                    info("Using " + mappedFile["reference-file"] + " instead of " + defName)
+                    fileDef = defList[mappedFile["reference-file"]]
+        return fileDef
+
     def run(self, customPath, oldPath, newPath):
 
+        mappings = {}
+
+        mappingsFile = os.path.join(customPath, "upgrade-assist.mapping.json")
+        if os.path.isfile(mappingsFile):
+            with (open(mappingsFile)) as json_data:
+                mappings = json.load(json_data)
         extHomes = [ "src/main/amp/config/alfresco/extension", "src/main/resources/alfresco/extension"]
         customFiles = self.collectExtensions(customPath, extHomes)
 
@@ -103,7 +124,7 @@ if __name__ == "__main__":
 
     checker = ScriptChecker()
     checker.run(customPath, oldPath, newPath)
-    sys.exit(1)
+
     compareBeanDefs(customPath, oldPath, newPath)
 
     myXML = {
