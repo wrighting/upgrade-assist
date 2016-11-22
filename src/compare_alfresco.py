@@ -51,12 +51,15 @@ class ScriptChecker():
                 continue
             for fileName in fileList:
                 srcFile = os.path.join(value["srcRoot"], fileName)
-                if srcFile in customFiles:
-                    srcFileList[srcFile] = { 
-                        "path": os.path.join(dirName, fileName),
-                        "dir": dirName,
-                        "file": fileName,
-                    }
+                orig = os.path.join(dirName, fileName)
+                for custom in customFiles:
+                    if orig.endswith(custom):
+                        srcFileList[custom] = { 
+                            "path": orig,
+                            "dir": dirName,
+                            "file": fileName,
+                        }
+                    
         return srcFileList
 
 
@@ -67,7 +70,10 @@ class ScriptChecker():
                 if filecmp.cmp(oldFiles[customFile]['path'], newFiles[customFile]['path']):
                     info("No change between versions:" + customFile)
                 else:
-                    actionRequired("Different file:", customFiles[customFile]['path'], oldFiles[customFile]['path'], newFiles[customFile]['path'])
+                    msg = "Different file:"
+                    if "bean" in customFiles[customFile]:
+                        msg = "Implementation in bean:" + customFiles[customFile]['bean'] + " defined in " + customFiles[customFile]['beanDef']['path']
+                    actionRequired(msg, customFiles[customFile]['path'], oldFiles[customFile]['path'], newFiles[customFile]['path'])
                     fromfile = oldFiles[customFile]['path']
                     tofile = newFiles[customFile]['path']
                     with open(fromfile) as fromf, open(tofile) as tof:
@@ -120,7 +126,9 @@ class ScriptChecker():
                         info("bean " + bean + " script " + mappedFile)
                         customFiles[mappedFile] = { 
                             "path": mappedFile,
-                            "srcRoot": os.path.dirname(mappedFile)
+                            "srcRoot": os.path.dirname(mappedFile),
+                            "bean": bean,
+                            "beanDef": beanDef
                             }
     
 
