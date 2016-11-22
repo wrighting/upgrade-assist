@@ -108,6 +108,22 @@ class ScriptChecker():
         extHomes = [ "src/main/amp/config/alfresco/extension", "src/main/resources/alfresco/extension"]
         customFiles = self.collectExtensions(customPath, extHomes)
 
+        myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML = compareBeanDefs(customPath, oldPath, newPath)
+         
+        for bean in myIdList:
+            beanDef = myIdList[bean]
+            if bean in mappings["beans"]:
+                info("Found mapping config")
+                mapping = mappings["beans"][bean]
+                if 'files' in mapping:
+                    for mappedFile in mapping['files']:
+                        info("bean " + bean + " script " + mappedFile)
+                        customFiles[mappedFile] = { 
+                            "path": mappedFile,
+                            "srcRoot": os.path.dirname(mappedFile)
+                            }
+    
+
         oldFiles = self.collectOriginals(oldPath, customFiles)
         newFiles = self.collectOriginals(newPath, customFiles)
 
@@ -125,8 +141,7 @@ if __name__ == "__main__":
     checker = ScriptChecker()
     checker.run(customPath, oldPath, newPath)
 
-    compareBeanDefs(customPath, oldPath, newPath)
-
+    
     myXML = {
               'repo-web.xml': { 'path': ''}, 
               'share-web.xml': { 'path': ''},

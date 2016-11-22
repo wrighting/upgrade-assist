@@ -95,7 +95,7 @@ def compareBeanDefs(customPath, oldPath, newPath):
         else:
             info("BeanDef only in custom code:" + beanDef + ":" + myDef['path'])
     
-    return myOtherXML, oldOtherXML, newOtherXML
+    return myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML
 
 nsbeansuri = 'http://www.springframework.org/schema/beans'
 nsbeans = '{' + nsbeansuri +'}'
