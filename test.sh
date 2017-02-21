@@ -1,2 +1,2 @@
 export PYTHONPATH=${PYTHONPATH}:./src
-python src/test/XMLutilTest.py
+python3 src/test/XMLutilTest.py

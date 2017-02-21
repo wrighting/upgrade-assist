@@ -2,7 +2,8 @@ import unittest
 import os
 import xmlUtil
 import xml.etree.ElementTree as ET
-import parse_context as pc
+import java_compare
+import report
 import copy
 
 class XMLutilTest(unittest.TestCase):
@@ -37,15 +38,17 @@ class XMLutilTest(unittest.TestCase):
         filePath1 = 'test/old/public-services-security-context.xml'
         filePath2 = 'test/new/public-services-security-context.xml'
 
-        beans1 = pc.collectBeansFromFile(filePath1)
-        beans2 = pc.collectBeansFromFile(filePath2)
+        reporter = report.Report()
+        jc = java_compare.JavaCompare(reporter)
+        beans1 = jc.collectBeansFromFile(filePath1)
+        beans2 = jc.collectBeansFromFile(filePath2)
         bean1 = beans1['SiteService_security']
         bean2 = beans2['SiteService_security']
         cmpResult = xmlUtil.cmp_el(bean1['element'], bean2['element'])
-        print bean1['path']
-        print ET.tostring(bean1['element'])
-        print bean2['path']
-        print ET.tostring(bean2['element'])
+        print (bean1['path'])
+        print (ET.tostring(bean1['element']))
+        print (bean2['path'])
+        print (ET.tostring(bean2['element']))
         self.assertEqual(cmpResult,-1)
 
 if __name__ == '__main__':
