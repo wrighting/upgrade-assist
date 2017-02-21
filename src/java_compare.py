@@ -36,6 +36,43 @@ class JavaCompare(object):
                     beanDef = defList[mappedBean["reference-bean-id"]]
         return beanDef
     
+
+    def compareJava(self, customPath, oldPath, newPath, myDef, oldDef, newDef):
+        self.reporter.info("Custom class is being used:" + myDef['element'].get('class'))
+        self.reporter.info("Checking java for:" + oldDef['element'].get('class') + " " + newDef['element'].get('class'))
+        oldSource = ""
+        for c in self.locateClass(oldDef['element'].get('class'), oldPath):
+            oldSource = c
+        
+        newSource = ""
+        for c in self.locateClass(newDef['element'].get('class'), newPath):
+            newSource = c
+        
+        if oldSource == "":
+            self.reporter.error("Cannot find java for class:" + oldDef['element'].get('class'))
+        if newSource == "":
+            self.reporter.error("Cannot find java for class:" + newDef['element'].get('class'))
+        try:
+            if filecmp.cmp(oldSource, newSource):
+                self.reporter.info("Same java:" + oldSource + " " + newSource)
+            else:
+                mySource = ""
+                for c in self.locateClass(myDef['element'].get('class'), customPath):
+                    mySource = c
+                
+                if mySource == "":
+                    self.reporter.error("Cannot find java for class:" + myDef['element'].get('class'))
+                self.reporter.actionRequired("Different java between versions", mySource, oldSource, newSource)
+                fromfile = oldSource
+                tofile = newSource
+                with open(fromfile) as fromf, open(tofile) as tof:
+                    fromlines, tolines = list(fromf), list(tof)
+                diff = difflib.context_diff(fromlines, tolines, fromfile=oldSource, tofile=newSource)
+
+                sys.stdout.writelines(diff) 
+        except OSError as ose:
+            print(ose)
+
     def compareBeanDefs(self, customPath, oldPath, newPath):
     
         mappings = {}
@@ -56,38 +93,11 @@ class JavaCompare(object):
             newDef = self.findDef(newIdList, beanDef, mappings)
             if oldDef and newDef:
                 self.reporter.info("BeanDef in all versions:" + beanDef)
-                if self.compareBeans(oldDef['element'], 
-                    newDef['element']) == 0:
+                if self.compareBeans(oldDef['element'], newDef['element']) == 0:
                     if myDef['element'].get('class') == newDef['element'].get('class') and newDef['element'].get('class') == oldDef['element'].get('class'):
                         self.reporter.info("No change so can keep same customization for:" + beanDef)
                     else:
-                        self.reporter.info("Custom class is being used:" + myDef['element'].get('class'))
-                        self.reporter.info("Checking java for:" + oldDef['element'].get('class') + " " + newDef['element'].get('class'))
-                        oldSource = ""
-                        for c in self.locateClass(oldDef['element'].get('class'), oldPath):
-                            oldSource = c
-                        
-                        newSource = ""
-                        for c in self.locateClass(newDef['element'].get('class'), newPath):
-                            newSource = c
-                        
-                        if oldSource == "":
-                            self.reporter.error("Cannot find java for class:" + oldDef['element'].get('class'))
-                        if newSource == "":
-                            self.reporter.error("Cannot find java for class:" + newDef['element'].get('class'))
-                        try:
-                            if filecmp.cmp(oldSource, newSource):
-                                self.reporter.info("Same java:" + oldSource + " " + newSource)
-                            else:
-                                mySource = ""
-                                for c in self.locateClass(myDef['element'].get('class'), customPath):
-                                    mySource = c
-                                
-                                if mySource == "":
-                                    self.reporter.error("Cannot find java for class:" + myDef['element'].get('class'))
-                                self.reporter.actionRequired("Different java between versions", mySource, oldSource, newSource)
-                        except OSError as ose:
-                            print (ose)
+                        self.compareJava(customPath, oldPath, newPath, myDef, oldDef, newDef)
                 else:
                     self.reporter.actionRequired("Different bean definition:", myDef['path'], oldDef['path'], newDef['path'])
                     self.compareBeans(myDef['element'], oldDef['element'])

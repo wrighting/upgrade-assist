@@ -79,7 +79,7 @@ class ScriptChecker():
                     tofile = newFiles[customFile]['path']
                     with open(fromfile) as fromf, open(tofile) as tof:
                         fromlines, tolines = list(fromf), list(tof)
-                    diff = difflib.context_diff(fromlines, tolines)
+                    diff = difflib.context_diff(fromlines, tolines, fromfile=fromfile, tofile=tofile)
 
                     sys.stdout.writelines(diff) 
             elif customFile in oldFiles:
