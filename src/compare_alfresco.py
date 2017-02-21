@@ -1,5 +1,3 @@
-from parse_context import compareBeanDefs
-from compare_xml import compareXML
 import getopt
 import sys
 import os
@@ -8,7 +6,10 @@ import filecmp
 import difflib
 import sys
 import json
-from common import actionRequired, info, warning, error
+
+import report
+import java_compare
+import comparitor
 
 class ScriptChecker():
 
@@ -27,7 +28,7 @@ class ScriptChecker():
             for fileName in fileList:
                 srcFile = os.path.join(srcRoot, fileName)
                 if srcFile in srcFileList:
-                    actionRequired("Conflicting customization", "", srcFileList[srcFile]["path"],os.path.join(dirName, fileName))
+                    self.reporter.actionRequired("Conflicting customization", "", srcFileList[srcFile]["path"],os.path.join(dirName, fileName))
                 else:
                     srcFileList[srcFile] = { 
                         "path": os.path.join(dirName, fileName),
@@ -66,14 +67,14 @@ class ScriptChecker():
     def compareFiles(self, customFiles, oldFiles, newFiles):
         for customFile in customFiles:
             if customFile in oldFiles and customFile in newFiles:
-                info("file in all versions:" + customFile)
+                self.reporter.info("file in all versions:" + customFile)
                 if filecmp.cmp(oldFiles[customFile]['path'], newFiles[customFile]['path']):
-                    info("No change between versions:" + customFile)
+                    self.reporter.info("No change between versions:" + customFile)
                 else:
                     msg = "Different file:"
                     if "bean" in customFiles[customFile]:
                         msg = "Implementation in bean:" + customFiles[customFile]['bean'] + " defined in " + customFiles[customFile]['beanDef']['path']
-                    actionRequired(msg, customFiles[customFile]['path'], oldFiles[customFile]['path'], newFiles[customFile]['path'])
+                    self.reporter.actionRequired(msg, customFiles[customFile]['path'], oldFiles[customFile]['path'], newFiles[customFile]['path'])
                     fromfile = oldFiles[customFile]['path']
                     tofile = newFiles[customFile]['path']
                     with open(fromfile) as fromf, open(tofile) as tof:
@@ -82,11 +83,11 @@ class ScriptChecker():
 
                     sys.stdout.writelines(diff) 
             elif customFile in oldFiles:
-                info("file not in new version:" + customFile)
+                self.reporter.info("file not in new version:" + customFile)
             elif customFile in newFiles:
-                info("file not in old version:" + customFile)
+                self.reporter.info("file not in old version:" + customFile)
             else:
-                info("file only in custom code:" + customFile + ":" + customFiles[customFile]['path'])
+                self.reporter.info("file only in custom code:" + customFile + ":" + customFiles[customFile]['path'])
 
 
     def findDef(self, defList, defName, mapping):
@@ -96,10 +97,10 @@ class ScriptChecker():
 
         if not fileDef:
             if "files" in mapping and defName in mapping["files"]:
-                info("Found mapping config")
+                self.reporter.info("Found mapping config")
                 mappedFile = mapping["files"][defName]
-                if "reference-file" in mappedBean and mappedFile["reference-file"] in defList:
-                    info("Using " + mappedFile["reference-file"] + " instead of " + defName)
+                if "reference-file" in mappedFile and mappedFile["reference-file"] in defList:
+                    self.reporter.info("Using " + mappedFile["reference-file"] + " instead of " + defName)
                     fileDef = defList[mappedFile["reference-file"]]
         return fileDef
 
@@ -114,16 +115,20 @@ class ScriptChecker():
         extHomes = [ "src/main/amp/config/alfresco/extension", "src/main/resources/alfresco/extension"]
         customFiles = self.collectExtensions(customPath, extHomes)
 
-        myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML = compareBeanDefs(customPath, oldPath, newPath)
+        self.reporter = report.Report()
+        jc = java_compare.JavaCompare(self.reporter)
+        self.comparitor = comparitor.Comparitor(self.reporter)
+        
+        myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML = jc.compareBeanDefs(customPath, oldPath, newPath)
          
         for bean in myIdList:
             beanDef = myIdList[bean]
             if bean in mappings["beans"]:
-                info("Found mapping config")
+                self.reporter.info("Found mapping config")
                 mapping = mappings["beans"][bean]
                 if 'files' in mapping:
                     for mappedFile in mapping['files']:
-                        info("bean " + bean + " script " + mappedFile)
+                        self.reporter.info("bean " + bean + " script " + mappedFile)
                         customFiles[mappedFile] = { 
                             "path": mappedFile,
                             "srcRoot": os.path.dirname(mappedFile),
@@ -168,4 +173,4 @@ if __name__ == "__main__":
               'share-web.xml': { 'path': os.path.join(newPath,'share/share/src/main/webapp/WEB-INF/web.xml')},
               'share-config-custom.xml': { 'path': os.path.join(newPath,'repo/root/packaging/installer/src/main/resources/bitrock/bitrock/alfresco/shared/web-extension/share-config-custom.xml')}
              }
-    compareXML(myXML, oldXML, newXML)
+    checker.comparitor.compareXML(myXML, oldXML, newXML)
