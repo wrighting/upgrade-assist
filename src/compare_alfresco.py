@@ -112,10 +112,11 @@ class ScriptChecker():
         if os.path.isfile(mappingsFile):
             with (open(mappingsFile)) as json_data:
                 mappings = json.load(json_data)
-        extHomes = [ "src/main/amp/config/alfresco/extension", "src/main/resources/alfresco/extension"]
-        customFiles = self.collectExtensions(customPath, extHomes)
 
         self.reporter = report.Report()
+
+        extHomes = [ "src/main/amp/config/alfresco/extension", "src/main/resources/alfresco/extension"]
+        customFiles = self.collectExtensions(customPath, extHomes)
         jc = java_compare.JavaCompare(self.reporter)
         self.comparitor = comparitor.Comparitor(self.reporter)
 
