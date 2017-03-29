@@ -118,24 +118,26 @@ class ScriptChecker():
         self.reporter = report.Report()
         jc = java_compare.JavaCompare(self.reporter)
         self.comparitor = comparitor.Comparitor(self.reporter)
-        
+
         myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML = jc.compareBeanDefs(customPath, oldPath, newPath)
-         
+
         for bean in myIdList:
             beanDef = myIdList[bean]
+            if not "beans" in mappings:
+                continue
             if bean in mappings["beans"]:
                 self.reporter.info("Found mapping config")
                 mapping = mappings["beans"][bean]
                 if 'files' in mapping:
                     for mappedFile in mapping['files']:
                         self.reporter.info("bean " + bean + " script " + mappedFile)
-                        customFiles[mappedFile] = { 
+                        customFiles[mappedFile] = {
                             "path": mappedFile,
                             "srcRoot": os.path.dirname(mappedFile),
                             "bean": bean,
                             "beanDef": beanDef
                             }
-    
+
 
         oldFiles = self.collectOriginals(oldPath, customFiles)
         newFiles = self.collectOriginals(newPath, customFiles)
