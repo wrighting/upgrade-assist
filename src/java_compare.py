@@ -93,24 +93,24 @@ class JavaCompare(object):
             newDef = self.findDef(newIdList, beanDef, mappings)
             if oldDef and newDef:
                 self.reporter.info("BeanDef in all versions:" + beanDef)
-                if self.compareBeans(oldDef['element'], newDef['element']) == 0:
+                if self.compareBeans(oldDef['element'],newDef['element'],oldDef['path'],newDef['path']) == 0:
                     if myDef['element'].get('class') == newDef['element'].get('class') and newDef['element'].get('class') == oldDef['element'].get('class'):
                         self.reporter.info("No change so can keep same customization for:" + beanDef)
                     else:
                         self.compareJava(customPath, oldPath, newPath, myDef, oldDef, newDef)
                 else:
                     self.reporter.actionRequired("Different bean definition:", myDef['path'], oldDef['path'], newDef['path'])
-                    self.compareBeans(myDef['element'], oldDef['element'])
+                    self.compareBeans(myDef['element'],oldDef['element'],myDef['path'],oldDef['path'])
             elif oldDef:
                 self.reporter.info("BeanDef not in new version:" + beanDef)
                 self.reporter.info("Custom file:" + myDef['path'])
                 self.reporter.info("Old version file:" + oldDef['path'])
-                self.compareBeans(myDef['element'], oldDef['element'])
+                self.compareBeans(myDef['element'], oldDef['element'],myDef['path'],oldDef['path'])
             elif newDef:
                 self.reporter.info("BeanDef not in old version:" + beanDef)
                 self.reporter.info("Custom file:" + myDef['path'])
                 self.reporter.info("New version file:" + newDef['path'])
-                self.compareBeans(myDef['element'], newDef['element'])
+                self.compareBeans(myDef['element'], newDef['element'],myDef['path'],newDef['path'])
             else:
                 self.reporter.info("BeanDef only in custom code:" + beanDef + ":" + myDef['path'])
         
@@ -186,14 +186,15 @@ class JavaCompare(object):
     #Less results but harder to read
     #    return inString.translate(None, string.whitespace)
     
-    def compareBeans(self, bean1, bean2):
+    def compareBeans(self, bean1, bean2, file1, file2):
         cmpResult = xmlUtil.cmp_el(bean1, bean2)
         if cmpResult != 0:
             myAsString = ET.tostring(bean1, encoding="unicode")
             newAsString = ET.tostring(bean2, encoding="unicode")
             for line in difflib.context_diff( \
                                  list(map(self.preDiffProcess, myAsString.splitlines(True))),\
-                                 list(map(self.preDiffProcess, newAsString.splitlines(True)))):
+                                 list(map(self.preDiffProcess, newAsString.splitlines(True))),\
+                                             fromfile=file1, tofile=file2):
                 sys.stdout.write(line)
             print()
         else:
