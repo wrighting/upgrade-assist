@@ -69,7 +69,7 @@ class JavaCompare(object):
                     fromlines, tolines = list(fromf), list(tof)
                 diff = difflib.context_diff(fromlines, tolines, fromfile=oldSource, tofile=newSource)
 
-                sys.stdout.writelines(diff) 
+                sys.stdout.writelines(diff)
         except OSError as ose:
             print(ose)
 
@@ -133,17 +133,61 @@ class JavaCompare(object):
         except ET.ParseError:
     #        print "Parse error:" + filePath
             return idList
-        #for bean in parseContextFile(tree,nsbeans + 'bean', {'bean': nsbeansuri}):
+        #Needs to be done twice because of the different ways the XML is defined
+        #There may be a better way...
         for bean in self.parseContextFile(tree,self.nsbeans + 'bean', {}):
             bean['path'] = filePath
-            idList[bean['id']] = copy.deepcopy(bean)
-    #                        print "Adding beanId1:" + bean['id']
-        #for bean in parseContextFile(tree,'bean', {'xmlns': nsbeansuri}):
+            if 'id' in bean:
+                idList[bean['id']] = copy.deepcopy(bean)
+            #Special case for post processing - see https://github.com/wrighting/upgrade-assist/issues/1
+            for props in bean['element'].findall("./property[@name='targetBeanName']"):
+                beanId = None
+                if 'value' in props.attrib:
+                    beanId = props.attrib['value']
+                else:
+                    for value in props.iter('value'):
+                        if value.text:
+                            beanId = value.text
+                className = None
+                for props in bean['element'].findall("./property[@name='replacementClassName']"):
+                    if 'value' in props.attrib:
+                        className = props.attrib['value']
+                    else:
+                        for value in props.iter('value'):
+                            if value.text:
+                                className = value.text
+
+                if beanId:
+                    idList[beanId] = copy.deepcopy(bean)
+                    if className:
+                        idList[beanId]['element'].set('class', className)
+
         for bean in self.parseContextFile(tree,'bean', {}):
             bean['path'] = filePath
-            idList[bean['id']] = copy.deepcopy(bean)
-    #        print "Adding beanId2:" + bean['id']
+            if 'id' in bean:
+                idList[bean['id']] = copy.deepcopy(bean)
+            #Special case for post processing - see https://github.com/wrighting/upgrade-assist/issues/1
+            for props in bean['element'].findall("./property[@name='targetBeanName']"):
+                beanId = None
+                if 'value' in props.attrib:
+                    beanId = props.attrib['value']
+                else:
+                    for value in props.iter('value'):
+                        if value.text:
+                            beanId = value.text
+                className = None
+                for props in bean['element'].findall("./property[@name='replacementClassName']"):
+                    if 'value' in props.attrib:
+                        className = props.attrib['value']
+                    else:
+                        for value in props.iter('value'):
+                            if value.text:
+                                className = value.text
 
+                if beanId:
+                    idList[beanId] = copy.deepcopy(bean)
+                    if className:
+                        idList[beanId]['element'].set('class', className)
         return idList
 
     def collectBeanIds(self, startDir):
