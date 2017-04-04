@@ -14,19 +14,19 @@ import json
 import report
 
 class JavaCompare(object):
-        
+
     nsbeansuri = 'http://www.springframework.org/schema/beans'
     nsbeans = '{' + nsbeansuri +'}'
-    
+
     def __init__(self, reporter):
-        
+
         self.reporter = reporter
-        
+
     def findDef(self, defList, defName, mapping):
         beanDef = None
         if defName in defList:
             beanDef = defList[defName]
-    
+
         if not beanDef:
             if "beans" in mapping and defName in mapping["beans"]:
                 self.reporter.info("Found mapping config")
@@ -35,7 +35,7 @@ class JavaCompare(object):
                     self.reporter.info("Using " + mappedBean["reference-bean-id"] + " instead of " + defName)
                     beanDef = defList[mappedBean["reference-bean-id"]]
         return beanDef
-    
+
 
     def compareJava(self, customPath, oldPath, newPath, myDef, oldDef, newDef):
         self.reporter.info("Custom class is being used:" + myDef['element'].get('class'))
@@ -43,11 +43,11 @@ class JavaCompare(object):
         oldSource = ""
         for c in self.locateClass(oldDef['element'].get('class'), oldPath):
             oldSource = c
-        
+
         newSource = ""
         for c in self.locateClass(newDef['element'].get('class'), newPath):
             newSource = c
-        
+
         if oldSource == "":
             self.reporter.error("Cannot find java for class:" + oldDef['element'].get('class'))
         if newSource == "":
@@ -59,7 +59,7 @@ class JavaCompare(object):
                 mySource = ""
                 for c in self.locateClass(myDef['element'].get('class'), customPath):
                     mySource = c
-                
+
                 if mySource == "":
                     self.reporter.error("Cannot find java for class:" + myDef['element'].get('class'))
                 self.reporter.actionRequired("Different java between versions", mySource, oldSource, newSource)
@@ -74,15 +74,15 @@ class JavaCompare(object):
             print(ose)
 
     def compareBeanDefs(self, customPath, oldPath, newPath):
-    
+
         mappings = {}
-    
+
     #    print (os.path.join(customPath, "upgrade-assist.mapping.json"))
         mappingFile = os.path.join(customPath, "upgrade-assist.mapping.json")
         if os.path.isfile(mappingFile):
             with (open(mappingFile)) as json_data:
                 mappings = json.load(json_data)
-    
+
         myIdList, myOtherXML = self.collectBeanIds(customPath) #    print str(myIdList)
         oldIdList, oldOtherXML = self.collectBeanIds(oldPath)
     #    print str(oldIdList)
@@ -113,12 +113,9 @@ class JavaCompare(object):
                 self.compareBeans(myDef['element'], newDef['element'],myDef['path'],newDef['path'])
             else:
                 self.reporter.info("BeanDef only in custom code:" + beanDef + ":" + myDef['path'])
-        
-        return myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML
-    
 
-    
-    
+        return myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML
+
     def parseContextFile(self, tree, xpath, namespaces):
         ids = []
         for bean in tree.findall(xpath, namespaces):
@@ -128,7 +125,7 @@ class JavaCompare(object):
     #        else:
     #            print "Bean missing Id" + str(bean)
         return ids
-    
+
     def collectBeansFromFile(self, filePath):
         idList = {}
         try:
@@ -146,13 +143,13 @@ class JavaCompare(object):
             bean['path'] = filePath
             idList[bean['id']] = copy.deepcopy(bean)
     #        print "Adding beanId2:" + bean['id']
-    
+
         return idList
-    
+
     def collectBeanIds(self, startDir):
         idList = {}
         otherXML = {}
-        
+
         ET.register_namespace('bean',self.nsbeansuri)
         for dirName, subdirList, fileList in os.walk(startDir):
             if re.match('.*/(target|\.svn|alf_data_dev)/.*', dirName):
@@ -171,7 +168,7 @@ class JavaCompare(object):
     #                    print "Parsing:" + filePath
     #    print str(idList)
         return idList, otherXML
-    
+
     def locateClass(self, className, root=os.curdir):
         '''Locate all files matching supplied filename pattern in and below
         supplied root directory.'''
@@ -180,12 +177,12 @@ class JavaCompare(object):
             #for filename in fnmatch.filter(files, pattern):
             if pattern in files:
                 yield os.path.join(path, pattern)
-    
+
     def preDiffProcess(self, inString):
         return inString
     #Less results but harder to read
     #    return inString.translate(None, string.whitespace)
-    
+
     def compareBeans(self, bean1, bean2, file1, file2):
         cmpResult = xmlUtil.cmp_el(bean1, bean2)
         if cmpResult != 0:
@@ -199,7 +196,7 @@ class JavaCompare(object):
             print()
         else:
             self.reporter.info("Bean definitions match")
-    
+
         return cmpResult
 
 
@@ -212,8 +209,7 @@ if __name__ == "__main__":
     customPath = args[0]
     oldPath = os.path.join(args[1], args[2])
     newPath = os.path.join(args[1], args[3])
-     
+
     jc = JavaCompare(Report())
     jc.compareBeanDefs(customPath, oldPath, newPath)
-            
-   
+
