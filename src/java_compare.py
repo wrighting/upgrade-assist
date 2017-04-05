@@ -270,5 +270,5 @@ if __name__ == "__main__":
 
     jc = JavaCompare(customPath, Report())
     jc.compareBeanDefs(oldPath, newPath)
-    jc.compareAspects(oldPath, newPath):
+    jc.compareAspects(oldPath, newPath)
 

@@ -1,0 +1,21 @@
+{
+    "beans": {
+                "custom-mail": {
+                    "context": "discussions-email/src/main/resources/alfresco/module/discussions-email/context/service-context.xml",
+                    "reference-bean-id": "mail"
+                },
+                "avatarService": {
+                    "files": [
+                             "/templates/webscripts/org/alfresco/slingshot/profile/avatar.get.js",
+                             "/templates/webscripts/org/alfresco/slingshot/profile/uploadavatar.post.js"
+                              ]
+                }
+    },
+    "aspects": {
+        "BuildPerson.aj": {
+            "classes": [
+                "org.alfresco.repo.web.scripts.discussion.AbstractDiscussionWebScript"
+            ]
+        }
+    }
+}
