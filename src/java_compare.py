@@ -18,50 +18,60 @@ class JavaCompare(object):
     nsbeansuri = 'http://www.springframework.org/schema/beans'
     nsbeans = '{' + nsbeansuri +'}'
 
-    def __init__(self, reporter):
+    def __init__(self, customPath, reporter):
 
         self.reporter = reporter
+        self.mappings = {}
 
-    def findDef(self, defList, defName, mapping):
+    #    print (os.path.join(customPath, "upgrade-assist.mapping.json"))
+        self.customPath = customPath
+
+        mappingFile = os.path.join(customPath, "upgrade-assist.mapping.json")
+        if os.path.isfile(mappingFile):
+            with (open(mappingFile)) as json_data:
+                self.mappings = json.load(json_data)
+
+
+    def findDef(self, defList, defName):
         beanDef = None
         if defName in defList:
             beanDef = defList[defName]
 
         if not beanDef:
-            if "beans" in mapping and defName in mapping["beans"]:
+            if "beans" in self.mappings and defName in self.mappings["beans"]:
                 self.reporter.info("Found mapping config")
-                mappedBean = mapping["beans"][defName]
+                mappedBean = self.mappings["beans"][defName]
                 if "reference-bean-id" in mappedBean and mappedBean["reference-bean-id"] in defList:
                     self.reporter.info("Using " + mappedBean["reference-bean-id"] + " instead of " + defName)
                     beanDef = defList[mappedBean["reference-bean-id"]]
         return beanDef
 
 
-    def compareJava(self, customPath, oldPath, newPath, myDef, oldDef, newDef):
-        self.reporter.info("Custom class is being used:" + myDef['element'].get('class'))
-        self.reporter.info("Checking java for:" + oldDef['element'].get('class') + " " + newDef['element'].get('class'))
+    def compareJava(self, oldPath, newPath, myClass, oldClass, newClass):
+        self.reporter.info("Custom class is being used:" + myClass)
+        self.reporter.info("Checking java for:" + oldClass + " " + newClass)
         oldSource = ""
-        for c in self.locateClass(oldDef['element'].get('class'), oldPath):
+        for c in self.locateClass(oldClass, oldPath):
             oldSource = c
 
         newSource = ""
-        for c in self.locateClass(newDef['element'].get('class'), newPath):
+        for c in self.locateClass(newClass, newPath):
             newSource = c
 
         if oldSource == "":
-            self.reporter.error("Cannot find java for class:" + oldDef['element'].get('class'))
+            self.reporter.error("Cannot find java for class:" + oldClass)
         if newSource == "":
-            self.reporter.error("Cannot find java for class:" + newDef['element'].get('class'))
+            self.reporter.error("Cannot find java for class:" + newClass)
         try:
             if filecmp.cmp(oldSource, newSource):
                 self.reporter.info("Same java:" + oldSource + " " + newSource)
             else:
                 mySource = ""
-                for c in self.locateClass(myDef['element'].get('class'), customPath):
+                for c in self.locateClass(myClass, self.customPath):
                     mySource = c
 
                 if mySource == "":
-                    self.reporter.error("Cannot find java for class:" + myDef['element'].get('class'))
+                    self.reporter.error("Cannot find java for class:" + myClass)
                 self.reporter.actionRequired("Different java between versions", mySource, oldSource, newSource)
                 fromfile = oldSource
                 tofile = newSource
@@ -73,31 +83,26 @@ class JavaCompare(object):
         except OSError as ose:
             print(ose)
 
-    def compareBeanDefs(self, customPath, oldPath, newPath):
+    def compareBeanDefs(self, oldPath, newPath):
 
-        mappings = {}
-
-    #    print (os.path.join(customPath, "upgrade-assist.mapping.json"))
-        mappingFile = os.path.join(customPath, "upgrade-assist.mapping.json")
-        if os.path.isfile(mappingFile):
-            with (open(mappingFile)) as json_data:
-                mappings = json.load(json_data)
-
-        myIdList, myOtherXML = self.collectBeanIds(customPath) #    print str(myIdList)
+        myIdList, myOtherXML = self.collectBeanIds(self.customPath) #    print str(myIdList)
         oldIdList, oldOtherXML = self.collectBeanIds(oldPath)
     #    print str(oldIdList)
         newIdList, newOtherXML = self.collectBeanIds(newPath)
         for beanDef in myIdList:
-            myDef = self.findDef(myIdList, beanDef, mappings)
-            oldDef = self.findDef(oldIdList, beanDef, mappings)
-            newDef = self.findDef(newIdList, beanDef, mappings)
+            myDef = self.findDef(myIdList, beanDef)
+            oldDef = self.findDef(oldIdList, beanDef)
+            newDef = self.findDef(newIdList, beanDef)
             if oldDef and newDef:
                 self.reporter.info("BeanDef in all versions:" + beanDef)
                 if self.compareBeans(oldDef['element'],newDef['element'],oldDef['path'],newDef['path']) == 0:
-                    if myDef['element'].get('class') == newDef['element'].get('class') and newDef['element'].get('class') == oldDef['element'].get('class'):
+                    myClass = myDef['element'].get('class')
+                    oldClass = oldDef['element'].get('class')
+                    newClass = newDef['element'].get('class')
+                    if myClass == newClass and newClass == oldClass:
                         self.reporter.info("No change so can keep same customization for:" + beanDef)
                     else:
-                        self.compareJava(customPath, oldPath, newPath, myDef, oldDef, newDef)
+                        self.compareJava(oldPath, newPath, myClass, oldClass, newClass)
                 else:
                     self.reporter.actionRequired("Different bean definition:", myDef['path'], oldDef['path'], newDef['path'])
                     self.compareBeans(myDef['element'],oldDef['element'],myDef['path'],oldDef['path'])
@@ -115,6 +120,15 @@ class JavaCompare(object):
                 self.reporter.info("BeanDef only in custom code:" + beanDef + ":" + myDef['path'])
 
         return myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML
+
+    def compareAspects(self, oldPath, newPath):
+
+        if not self.mappings:
+            return
+
+        for mapping in self.mappings['aspects']:
+            for aClass in self.mappings['aspects'][mapping]['classes']:
+                self.compareJava(oldPath, newPath, mapping, aClass, aClass)
 
     def parseContextFile(self, tree, xpath, namespaces):
         ids = []
@@ -254,6 +268,7 @@ if __name__ == "__main__":
     oldPath = os.path.join(args[1], args[2])
     newPath = os.path.join(args[1], args[3])
 
-    jc = JavaCompare(Report())
-    jc.compareBeanDefs(customPath, oldPath, newPath)
+    jc = JavaCompare(customPath, Report())
+    jc.compareBeanDefs(oldPath, newPath)
+    jc.compareAspects(oldPath, newPath):
 

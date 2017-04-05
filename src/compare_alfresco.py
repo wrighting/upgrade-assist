@@ -117,10 +117,11 @@ class ScriptChecker():
 
         extHomes = [ "src/main/amp/config/alfresco/extension", "src/main/resources/alfresco/extension"]
         customFiles = self.collectExtensions(customPath, extHomes)
-        jc = java_compare.JavaCompare(self.reporter)
+        jc = java_compare.JavaCompare(customPath, self.reporter)
         self.comparitor = comparitor.Comparitor(self.reporter)
 
-        myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML = jc.compareBeanDefs(customPath, oldPath, newPath)
+        myIdList, myOtherXML, oldIdList, oldOtherXML, newIdList, newOtherXML = jc.compareBeanDefs(oldPath, newPath)
+        jc.compareAspects(oldPath, newPath)
 
         for bean in myIdList:
             beanDef = myIdList[bean]
