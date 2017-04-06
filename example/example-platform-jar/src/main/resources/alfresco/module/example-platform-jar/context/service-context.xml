@@ -53,8 +53,7 @@
 
     <!-- Note this doesn't exist and is just an example -->
     <!-- https://gist.github.com/AFaust/b83b405998cb4303e77a -->
-    <!-- Warning - it won't work without the id attribute -->
-	<bean id="x" class="de.axelfaust.examples.beans.ImplementationClassReplacingBeanFactoryPostProcessor">
+	<bean class="de.axelfaust.examples.beans.ImplementationClassReplacingBeanFactoryPostProcessor">
         <property name="targetBeanName" value="dbNodeService" />
         <property name="originalClassName" value="org.alfresco.repo.node.db.DbNodeServiceImpl" />
         <property name="replacementClassName" value="de.axelfaust.examples.service.BetterDbNodeServiceImpl" />

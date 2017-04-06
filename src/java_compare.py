@@ -134,11 +134,49 @@ class JavaCompare(object):
         ids = []
         for bean in tree.findall(xpath, namespaces):
             if 'id' in bean.attrib:
-    #            bean.
                 ids.append({ 'id': bean.attrib['id'], 'element': copy.deepcopy(bean)})
-    #        else:
-    #            print "Bean missing Id" + str(bean)
+            elif 'name' in bean.attrib:
+                ids.append({ 'id': bean.attrib['name'], 'element': copy.deepcopy(bean)})
+            elif 'class' in bean.attrib:
+                ids.append({ 'id': bean.attrib['class'], 'element': copy.deepcopy(bean)})
+            elif 'parent' in bean.attrib:
+                pass
+            else:
+                print("Bean missing Id" + str(ET.tostring(bean)))
         return ids
+
+    def addBeanToList(self, filePath, idList, bean):
+
+        bean['path'] = filePath
+        if 'id' in bean:
+            beanId = bean['id']
+            if beanId in idList:
+                self.reporter.info("multiple definition for " + beanId + " in " + filePath + " and " + idList[beanId]['path'])
+            idList[beanId] = copy.deepcopy(bean)
+
+        #Special case for post processing - see https://github.com/wrighting/upgrade-assist/issues/1
+        for props in bean['element'].findall("./property[@name='targetBeanName']"):
+            beanId = None
+            if 'value' in props.attrib:
+                beanId = props.attrib['value']
+            else:
+                for value in props.iter('value'):
+                    if value.text:
+                        beanId = value.text
+            className = None
+            for props in bean['element'].findall("./property[@name='replacementClassName']"):
+                if 'value' in props.attrib:
+                    className = props.attrib['value']
+                else:
+                    for value in props.iter('value'):
+                        if value.text:
+                            className = value.text
+
+            if beanId:
+                idList[beanId] = copy.deepcopy(bean)
+                if className:
+                    idList[beanId]['element'].set('class', className)
+
 
     def collectBeansFromFile(self, filePath):
         idList = {}
@@ -150,58 +188,11 @@ class JavaCompare(object):
         #Needs to be done twice because of the different ways the XML is defined
         #There may be a better way...
         for bean in self.parseContextFile(tree,self.nsbeans + 'bean', {}):
-            bean['path'] = filePath
-            if 'id' in bean:
-                idList[bean['id']] = copy.deepcopy(bean)
-            #Special case for post processing - see https://github.com/wrighting/upgrade-assist/issues/1
-            for props in bean['element'].findall("./property[@name='targetBeanName']"):
-                beanId = None
-                if 'value' in props.attrib:
-                    beanId = props.attrib['value']
-                else:
-                    for value in props.iter('value'):
-                        if value.text:
-                            beanId = value.text
-                className = None
-                for props in bean['element'].findall("./property[@name='replacementClassName']"):
-                    if 'value' in props.attrib:
-                        className = props.attrib['value']
-                    else:
-                        for value in props.iter('value'):
-                            if value.text:
-                                className = value.text
-
-                if beanId:
-                    idList[beanId] = copy.deepcopy(bean)
-                    if className:
-                        idList[beanId]['element'].set('class', className)
+            self.addBeanToList(filePath, idList, bean)
 
         for bean in self.parseContextFile(tree,'bean', {}):
-            bean['path'] = filePath
-            if 'id' in bean:
-                idList[bean['id']] = copy.deepcopy(bean)
-            #Special case for post processing - see https://github.com/wrighting/upgrade-assist/issues/1
-            for props in bean['element'].findall("./property[@name='targetBeanName']"):
-                beanId = None
-                if 'value' in props.attrib:
-                    beanId = props.attrib['value']
-                else:
-                    for value in props.iter('value'):
-                        if value.text:
-                            beanId = value.text
-                className = None
-                for props in bean['element'].findall("./property[@name='replacementClassName']"):
-                    if 'value' in props.attrib:
-                        className = props.attrib['value']
-                    else:
-                        for value in props.iter('value'):
-                            if value.text:
-                                className = value.text
+            self.addBeanToList(filePath, idList, bean)
 
-                if beanId:
-                    idList[beanId] = copy.deepcopy(bean)
-                    if className:
-                        idList[beanId]['element'].set('class', className)
         return idList
 
     def collectBeanIds(self, startDir):
