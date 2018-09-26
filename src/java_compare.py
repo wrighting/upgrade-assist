@@ -125,6 +125,9 @@ class JavaCompare(object):
 
         if not self.mappings:
             return
+        if 'aspects' not in self.mappings:
+            print(self.mappings)
+            return
 
         for mapping in self.mappings['aspects']:
             for aClass in self.mappings['aspects'][mapping]['classes']:
