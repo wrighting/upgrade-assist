@@ -41,6 +41,10 @@ do
         TARGET=${DEST}/${i}/repo/surf-webscripts
         test -d ${TARGET} || git clone https://github.com/Alfresco/surf-webscripts.git ${TARGET}
         (cd ${TARGET}; git checkout tags/${CHECKOUT_VERSION})
+		CHECKOUT_VERSION=6.38
+        TARGET=${DEST}/${i}/repo/alfresco-remote-api
+        test -d ${TARGET} || git clone git@github.com:Alfresco/alfresco-remote-api.git ${TARGET}
+        (cd ${TARGET}; git checkout tags/${CHECKOUT_VERSION})
 	elif [ ${MAJOR_VERSION} -ge 5 -a ${MINOR_VERSION} -ge 1 ]
     then
 		CHECKOUT_VERSION=${i}
